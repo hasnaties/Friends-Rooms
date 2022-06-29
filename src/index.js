@@ -15,19 +15,26 @@ app.use(express.static(viewsDirectoryPath))
 
 // -- Alternative to line above --
 // router.get('/', (req, res) => {
-//     res.sendFile(viewsDirectoryPath + '/index.html');
+//     res.sendFile( viewsDirectoryPath + '/index.html');
 // })
 // app.use(router)
 
 io.on('connection', (socket) => {
+
     socket.emit('welcome', "Welcome!");
     
     socket.on('sendMessage', (msg) => {
-        io.emit('receiveMessage', msg)
+        io.emit('receiveMessage', msg);
+    })
+
+    socket.on('sendLocation', (position, callback) => {
+        
+        io.emit('locationMessage', position)
+        callback('Message is sent.')
     })
 })
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 server.listen(port, ()=>{
     console.log(`Server is up on port: ${port}` );
 })
