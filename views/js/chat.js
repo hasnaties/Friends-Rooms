@@ -1,11 +1,19 @@
-const messageOne = document.querySelector('#messageOne');
-const messageTwo = document.querySelector('#messageTwo');
-const messageForm = document.querySelector('form')
-
 const socket = io()
 
+// -- HTML_Elements --
+const messageForm = document.querySelector('form')
+const $locationButton = messageForm.querySelector('#locationButton')
+const $messageHtml = document.querySelector('#message-html')
+const $inputMessage = messageForm.querySelector('#inputMessage')
+// -- Templates --
+const messageTemplate = document.querySelector('#message-template').innerHTML
+const locationTemplate = document.querySelector('#location-template').innerHTML
+
 socket.on('welcome', (msg) => {
-    messageOne.textContent = msg;
+    const renderMessage = Mustache.render(messageTemplate, {
+        message: msg
+    })
+    $messageHtml.insertAdjacentHTML('beforeend', renderMessage)
 })
 
 messageForm.addEventListener('submit', (e) => {
@@ -13,31 +21,41 @@ messageForm.addEventListener('submit', (e) => {
 
     const message = e.target.elements.inputMessage.value;
     socket.emit('sendMessage', message)
+    $inputMessage.value='';
 
 })
 
 socket.on('receiveMessage', (msg) => {
-    messageOne.textContent = 'New Message: ';
-    messageTwo.textContent = msg;
+
+    const renderMessage = Mustache.render(messageTemplate, {
+        message: msg
+    })
+    $messageHtml.insertAdjacentHTML('beforeend', renderMessage)
 })
 
-document.querySelector('#locationButton').addEventListener('click', () => {
+$locationButton.addEventListener('click', () => {
+
+    $locationButton.setAttribute('disabled', 'disabled');
+
     if (!navigator.geolocation) {
         return alert('Your browser does not support this feature.')
     }
 
     navigator.geolocation.getCurrentPosition((position) => {
-        console.log('sending Location: ', position.coords);
 
-        socket.emit('sendLocation', {
-            lat: position.coords.latitude,
-            alt: position.coords.longitude
-        }, (returnedMessage) => {
+        const url = `https://google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`;
+        
+        socket.emit('sendLocation', url, (returnedMessage) => {
             console.log(`server response : ${returnedMessage}`);
+            $locationButton.removeAttribute('disabled')
         })
     })
 })
 
-socket.on('locationMessage', (position) => {
-    console.log('received location:', position);
+socket.on('locationMessage', (url) => {
+    console.log('received location:', url);
+    const renderMessage = Mustache.render(locationTemplate, {
+        location: url
+    })
+    $messageHtml.insertAdjacentHTML('beforeend', renderMessage)
 })
